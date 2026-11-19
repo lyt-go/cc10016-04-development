@@ -61,6 +61,7 @@ class SeedConfigService:
             d = dict(row)
             d["_parse_rule_count"] = len(store.get_relations("seed_to_parse_rule", source_module=MODULE, source_id=d["id"]))
             d["_cursor_count"] = len(store.get_relations("seed_to_cursor", source_module=MODULE, source_id=d["id"]))
+            d["_segment_count"] = len(store.get_relations("seed_to_segment", source_module=MODULE, source_id=d["id"]))
             enriched.append(d)
         return enriched, total
 
@@ -71,6 +72,7 @@ class SeedConfigService:
         d = dict(entry)
         d["_parse_rule_count"] = len(store.get_relations("seed_to_parse_rule", source_module=MODULE, source_id=entry_id))
         d["_cursor_count"] = len(store.get_relations("seed_to_cursor", source_module=MODULE, source_id=entry_id))
+        d["_segment_count"] = len(store.get_relations("seed_to_segment", source_module=MODULE, source_id=entry_id))
         return d
 
     def create_entry(self, values: dict[str, Any]) -> tuple[dict[str, Any] | None, list[str]]:
@@ -132,3 +134,15 @@ class SeedConfigService:
             return {"ok": False, "error": "种子不存在"}
         store.add_relation("source_to_seed", "crawl_source", source_id, MODULE, entry_id)
         return {"ok": True, "seed_id": entry_id, "source_id": source_id}
+
+    def generate_page_segments(self, entry_id: int, segment_size: int = 20) -> dict[str, Any]:
+        """主数据链入口：种子管理解析分页配置，生成种子页段清单。
+
+        页段边界与增量游标起点同步落库；同一分页参数对应多个页段且旧游标
+        停在页段中间时，登记版本冲突等待处理。
+        """
+        entry = store.find(MODULE, entry_id)
+        if entry is None:
+            return {"ok": False, "error": f"采集种子 {entry_id} 不存在或已归档"}
+        from app.services.seed_segment import SeedSegmentService
+        return SeedSegmentService().generate_for_seed(entry_id, segment_size)

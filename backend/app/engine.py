@@ -10,6 +10,7 @@
 7. 监控 -> 采集编排执行状态
 8. 种子 -> 增量游标推进
 9. 全链路贯通
+10. 种子管理 -> 种子页段清单 -> 增量游标
 """
 from __future__ import annotations
 
@@ -315,6 +316,46 @@ def chain_seed_cursor_advance(seed_id: int, new_position: str) -> dict[str, Any]
         "cursor_id": cursor_id,
         "advance": result,
     }
+
+
+def chain_seed_segment_cursor(seed_id: int, segment_size: int = 20) -> dict[str, Any]:
+    """链路10: 种子管理 -> 种子页段清单 -> 增量游标。
+
+    主数据链由种子管理生成种子页段清单（页段边界与游标起点同步落库），
+    增量游标随后读取清单，只从本段起点建立检查点。
+    """
+    from app.services.seed_config import SeedConfigService
+    from app.services.incre_cursor import IncreCursorService
+    from app.services.seed_segment import SeedSegmentService
+
+    seed_svc = SeedConfigService()
+    cursor_svc = IncreCursorService()
+    seg_svc = SeedSegmentService()
+
+    seed = seed_svc.get_entry(seed_id)
+    if seed is None:
+        return {"ok": False, "message": "种子不存在", "seed_id": seed_id}
+
+    gen = seed_svc.generate_page_segments(seed_id, segment_size)
+    if not gen.get("ok"):
+        return {"ok": False, "message": gen.get("error", "页段生成失败"), "seed_id": seed_id}
+
+    result: dict[str, Any] = {
+        "ok": True,
+        "message": "链路执行成功",
+        "seed_id": seed_id,
+        "generate": gen,
+    }
+    if gen.get("conflict"):
+        result["message"] = "页段生成触发版本冲突，待处理"
+        result["manifest"] = seg_svc.manifest_view(seed_id)
+        return result
+
+    cursor_id = gen.get("cursor", {}).get("cursor_id")
+    checkpoint = cursor_svc.build_checkpoint_from_manifest(int(cursor_id))
+    result["checkpoint"] = checkpoint
+    result["manifest"] = seg_svc.manifest_view(seed_id)
+    return result
 
 
 def chain_full_pipeline(source_id: int, html: str, records: list[dict[str, Any]]) -> dict[str, Any]:

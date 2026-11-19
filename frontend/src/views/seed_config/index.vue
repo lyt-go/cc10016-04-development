@@ -48,6 +48,14 @@
             >
               {{ action }}
             </button>
+            <button
+              class="link"
+              type="button"
+              :data-testid="`generate-${row.id}`"
+              @click="generateSegments(row)"
+            >
+              生成页段
+            </button>
           </td>
         </tr>
         <tr v-if="!rows.length">
@@ -74,6 +82,7 @@
 
     <footer class="page-foot">
       <span>共 {{ total }} 条种子管理记录</span>
+      <span v-if="noticeMessage" class="notice-text">{{ noticeMessage }}</span>
       <span v-if="errorMessage" class="error-text">{{ errorMessage }}</span>
     </footer>
   </section>
@@ -95,6 +104,7 @@ const metricNames = ["采集种子总数", "待校验种子", "已生效种子"]
 const rows = ref<Row[]>([])
 const total = ref(0)
 const errorMessage = ref('')
+const noticeMessage = ref('')
 const filters = ref<Record<string, string>>({})
 const filterFields = columns.slice(0, 3)
 const showCreate = ref(false)
@@ -165,6 +175,25 @@ async function runAction(action: string, row: Row) {
     await reload()
   } catch (error) {
     errorMessage.value = error instanceof Error ? error.message : '种子管理操作失败'
+  }
+}
+
+async function generateSegments(row: Row) {
+  errorMessage.value = ''
+  noticeMessage.value = ''
+  try {
+    const response = await request(`${ENDPOINT}/${row.id}/generate_segments`, {
+      method: 'POST',
+      body: JSON.stringify({}),
+    })
+    const payload = await response.json()
+    if (!response.ok || !payload.ok) throw new Error(payload.error || payload.message || '生成页段失败')
+    noticeMessage.value = payload.conflict
+      ? `${payload.message}，请到「种子页段」页处理版本冲突`
+      : payload.message || '种子页段清单已生成'
+    await reload()
+  } catch (error) {
+    errorMessage.value = error instanceof Error ? error.message : '生成页段失败'
   }
 }
 

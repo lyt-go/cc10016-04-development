@@ -48,6 +48,22 @@
             >
               {{ action }}
             </button>
+            <button
+              class="link"
+              type="button"
+              :data-testid="`checkpoint-${row.id}`"
+              @click="buildCheckpoint(row)"
+            >
+              建立检查点
+            </button>
+            <button
+              class="link"
+              type="button"
+              :data-testid="`consume-${row.id}`"
+              @click="consumePage(row)"
+            >
+              消费一页
+            </button>
           </td>
         </tr>
         <tr v-if="!rows.length">
@@ -74,6 +90,7 @@
 
     <footer class="page-foot">
       <span>共 {{ total }} 条增量游标记录</span>
+      <span v-if="noticeMessage" class="notice-text">{{ noticeMessage }}</span>
       <span v-if="errorMessage" class="error-text">{{ errorMessage }}</span>
     </footer>
   </section>
@@ -95,6 +112,7 @@ const metricNames = ["增量标记总数", "待校验标记", "采集中标记"]
 const rows = ref<Row[]>([])
 const total = ref(0)
 const errorMessage = ref('')
+const noticeMessage = ref('')
 const filters = ref<Record<string, string>>({})
 const filterFields = columns.slice(0, 3)
 const showCreate = ref(false)
@@ -165,6 +183,37 @@ async function runAction(action: string, row: Row) {
     await reload()
   } catch (error) {
     errorMessage.value = error instanceof Error ? error.message : '增量游标操作失败'
+  }
+}
+
+async function buildCheckpoint(row: Row) {
+  errorMessage.value = ''
+  noticeMessage.value = ''
+  try {
+    const response = await request(`${ENDPOINT}/${row.id}/build_checkpoint`, { method: 'POST' })
+    const payload = await response.json()
+    if (!response.ok || !payload.ok) throw new Error(payload.error || '建立检查点失败')
+    noticeMessage.value = payload.message || '检查点已建立'
+    await reload()
+  } catch (error) {
+    errorMessage.value = error instanceof Error ? error.message : '建立检查点失败'
+  }
+}
+
+async function consumePage(row: Row) {
+  errorMessage.value = ''
+  noticeMessage.value = ''
+  try {
+    const response = await request(`${ENDPOINT}/${row.id}/consume`, {
+      method: 'POST',
+      body: JSON.stringify({ pages: 1 }),
+    })
+    const payload = await response.json()
+    if (!response.ok || !payload.ok) throw new Error(payload.error || '消费页段失败')
+    noticeMessage.value = `页段 ${payload.segment} 已消费 ${payload.consumed} 页，剩余 ${payload.剩余页} 页`
+    await reload()
+  } catch (error) {
+    errorMessage.value = error instanceof Error ? error.message : '消费页段失败'
   }
 }
 

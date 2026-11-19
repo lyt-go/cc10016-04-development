@@ -362,6 +362,9 @@ SEED_ROWS: dict[str, list[dict[str, Any]]] = {
          "指标编号": "MON-F006", "关联源": "SRC-FIN-006", "成功率": "95.0%", "平均延迟": "50ms",
          "失败分类": "ConnectionError:50", "采集量": "500000", "数据量": "25GB", "最近告警": "2026-11-10T14:20:00Z"},
     ],
+    # 种子页段清单：初始为空——当前种子只有分页文本，没有可供续采的页段边界，
+    # 页段由种子管理解析分页配置后生成（见 services/seed_segment.py）。
+    "seed_segment": [],
     "content_extract": [
         {"id": 1, "status": "已完成", "pending": False, "abnormal": False,
          "任务编号": "CONT-E001", "来源页面": "https://mall-a.example.com/item/10086", "内容类型": "商品详情",

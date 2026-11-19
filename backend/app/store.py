@@ -30,6 +30,8 @@ class Store:
             "data_validate_reports": {},     # data_validate 校验报告
             "result_store_partitions": {},   # result_store 分区元数据
             "rate_limit_states": {},         # rate_limit 令牌桶状态
+            "seed_segment_state_log": {},    # seed_segment 页段阶段状态记录(按seq有序)
+            "seed_segment_conflicts": {},    # seed_segment 分页参数版本冲突登记
         }
         # 模块间关系索引（外键映射）——基于 seed 数据自动构建
         self._relations: dict[str, list[dict[str, Any]]] = {
@@ -42,6 +44,7 @@ class Store:
             "source_to_anti_spider": [],# crawl_source.id -> anti_spider
             "source_to_retry": [],     # crawl_source.id -> retry_policy
             "seed_to_cursor": [],      # seed_config.id -> incre_cursor
+            "seed_to_segment": [],     # seed_config.id -> seed_segment
             "source_to_dedup": [],     # crawl_source.id -> dedup_filter
             "source_to_validate": [],  # crawl_source.id -> data_validate
             "source_to_result": [],    # crawl_source.id -> result_store
@@ -213,6 +216,14 @@ class Store:
                 continue
             result.append(r)
         return result
+
+    def remove_relations(self, relation_type: str, target_ids: set[int] | None = None) -> None:
+        """按目标id集合移除关系；同步落库失败回滚时使用。"""
+        rels = self._relations.get(relation_type, [])
+        if target_ids is None:
+            self._relations[relation_type] = []
+            return
+        self._relations[relation_type] = [r for r in rels if r["target_id"] not in target_ids]
 
     def overview(self) -> dict[str, object]:
         modules: list[dict[str, object]] = []

@@ -4,7 +4,7 @@ from __future__ import annotations
 import csv
 import io
 
-from fastapi import APIRouter, HTTPException, Query, Request
+from fastapi import APIRouter, Body, HTTPException, Query, Request
 from fastapi.responses import StreamingResponse
 
 from app.schemas import ActionPayload, ActionResult, EntryPayload, PageResult
@@ -105,3 +105,10 @@ def bind_source(entry_id: int, payload: dict[str, object]) -> dict:
     if source_id is None:
         return {"ok": False, "error": "缺少source_id"}
     return service.bind_source(entry_id, int(source_id))
+
+
+@router.post("/{entry_id}/generate_segments")
+def generate_segments(entry_id: int, payload: dict[str, object] = Body(default_factory=dict)) -> dict:
+    """解析分页配置生成种子页段清单；页段边界与增量游标起点同步落库。"""
+    size = int(payload.get("segment_size") or 20)
+    return service.generate_page_segments(entry_id, size)

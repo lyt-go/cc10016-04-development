@@ -60,6 +60,18 @@ class SeedConfigEntry(BaseModel):
     field_6: str | None = None  # 去重键
     field_7: str | None = None  # 种子优先级
 
+class SeedSegmentEntry(BaseModel):
+    """种子页段明细结构。"""
+
+    field_0: str | None = None  # 段编号
+    field_1: str | None = None  # 关联种子
+    field_2: str | None = None  # 分页参数
+    field_3: str | None = None  # 页段范围
+    field_4: str | None = None  # 游标起点
+    field_5: str | None = None  # 当前游标
+    field_6: str | None = None  # 已完成页数
+    field_7: str | None = None  # 清单版本
+
 class ParseRuleEntry(BaseModel):
     """解析规则明细结构。"""
 

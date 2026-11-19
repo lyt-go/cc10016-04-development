@@ -3,6 +3,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 import Overview from '@/views/Overview.vue'
 const CrawlSource = () => import('@/views/crawl_source/index.vue')
 const SeedConfig = () => import('@/views/seed_config/index.vue')
+const SeedSegment = () => import('@/views/seed_segment/index.vue')
 const ParseRule = () => import('@/views/parse_rule/index.vue')
 const RateLimit = () => import('@/views/rate_limit/index.vue')
 const ProxyPool = () => import('@/views/proxy_pool/index.vue')
@@ -26,6 +27,7 @@ const router = createRouter({
     { path: '/', name: 'overview', component: Overview },
     { path: '/crawl_source', name: 'crawl_source', component: CrawlSource },
     { path: '/seed_config', name: 'seed_config', component: SeedConfig },
+    { path: '/seed_segment', name: 'seed_segment', component: SeedSegment },
     { path: '/parse_rule', name: 'parse_rule', component: ParseRule },
     { path: '/rate_limit', name: 'rate_limit', component: RateLimit },
     { path: '/proxy_pool', name: 'proxy_pool', component: ProxyPool },

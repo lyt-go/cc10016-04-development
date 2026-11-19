@@ -15,6 +15,7 @@ from app.engine import (
     chain_monitor_schedule,
     chain_full_pipeline,
     chain_seed_cursor_advance,
+    chain_seed_segment_cursor,
 )
 from app.schemas import ActionResult
 
@@ -76,6 +77,13 @@ def api_monitor_schedule(schedule_id: int) -> dict[str, Any]:
 def api_seed_cursor_advance(seed_id: int, new_position: str) -> dict[str, Any]:
     """链路8: 种子 -> 增量游标推进"""
     result = chain_seed_cursor_advance(seed_id, new_position)
+    return {"ok": result.get("ok", False), "message": result.get("message", ""), "entry": result}
+
+
+@router.post("/seed-segment-cursor", response_model=ActionResult)
+def api_seed_segment_cursor(seed_id: int, segment_size: int = 20) -> dict[str, Any]:
+    """链路10: 种子管理 -> 种子页段清单 -> 增量游标"""
+    result = chain_seed_segment_cursor(seed_id, segment_size)
     return {"ok": result.get("ok", False), "message": result.get("message", ""), "entry": result}
 
 

@@ -4,7 +4,7 @@ from __future__ import annotations
 import csv
 import io
 
-from fastapi import APIRouter, HTTPException, Query, Request
+from fastapi import APIRouter, Body, HTTPException, Query, Request
 from fastapi.responses import StreamingResponse
 
 from app.schemas import ActionPayload, ActionResult, EntryPayload, PageResult
@@ -108,3 +108,16 @@ def rollback_to_checkpoint(entry_id: int, payload: dict[str, object]) -> dict:
     if idx is None:
         return {"ok": False, "error": "缺少index"}
     return service.rollback_to_checkpoint(entry_id, int(idx))
+
+
+@router.post("/{entry_id}/build_checkpoint")
+def build_checkpoint(entry_id: int) -> dict:
+    """读取种子页段清单，只从当前可写页段的起点建立检查点。"""
+    return service.build_checkpoint_from_manifest(entry_id)
+
+
+@router.post("/{entry_id}/consume")
+def consume_pages(entry_id: int, payload: dict[str, object] = Body(default_factory=dict)) -> dict:
+    """在可写页段内消费页码，回写已消费页段。"""
+    pages = int(payload.get("pages") or 1)
+    return service.consume_page(entry_id, pages)
